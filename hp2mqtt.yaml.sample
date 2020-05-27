@@ -1,0 +1,11 @@
+system:
+  mqtt_broker_address: "localhost"
+  mqtt_port: "1883"
+  mqtt_user: ""
+  mqtt_password: ""
+  mqtt_channel: "hp2mqtt"
+  hp_host: "199.100.10.1"
+
+devices:
+  Rollershutter1: "1010000"
+  Actor2: "1010002"
