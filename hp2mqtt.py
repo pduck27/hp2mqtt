@@ -195,7 +195,7 @@ if len(sys.argv) > 1:
             log_message(json.dumps(parsed_json, indent=4, sort_keys=True))
 
             device_info_file = open(dev_file_name, "w")
-            device_info_file.write(response.text)
+            # issue with encoding device_info_file.write(response.text)
             device_info_file.close
             log_message("File %2 update with current device list." % (dev_file_name))
             sys.exit(0)
