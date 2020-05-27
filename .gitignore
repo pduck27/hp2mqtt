@@ -1,5 +1,7 @@
 #local configuration
 hp2mqtt.yaml
+device_info.json
+hp2mqtt.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
