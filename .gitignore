@@ -2,7 +2,6 @@
 hp2mqtt.yaml
 device_info.json
 hp2mqtt.log
-readme_images/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
