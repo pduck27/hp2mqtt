@@ -1,11 +1,3 @@
-# TODO:
-# User/Pwd for Home Pilot
-# Logging with debug parameter 
-# Use as service
-# Create better device output
-# Additional devices / scenes / groups like here https://github.com/homecineplexx/ioBroker.homepilot20/blob/master/main.js
-
-
 #import
 import paho.mqtt.client as mqttClient
 import time
