@@ -1,6 +1,6 @@
 # hp2mqtt
 
-Python proxy script to communicate between Rademacher HomePilot and MQTT broker. Mainly written to support [openhab](https://www.openhab.org/) integration but can be used for other implementations, too.
+Python proxy script to communicate between [Rademacher](www.rademacher.de) HomePilot and MQTT broker. Mainly written to support [openhab](https://www.openhab.org/) integration but can be used for other implementations, too.
 Be aware, the used Home Pilot interface is not officially supported by Rademacher. Therefore you use it on your own risk without warranty.
 Inspirations for the project I took from [zigbee2mqtt](https://github.com/koenkk/zigbee2mqtt) and [io broker API implementation](https://github.com/homecineplexx/ioBroker.homepilot20).
 
