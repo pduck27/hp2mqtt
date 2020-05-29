@@ -56,6 +56,9 @@ docker run -d \
     pduck27/hp2mqtt 
 ```
 
+- {config-folder} the full-qualified path to the data folder on the docker-host
+- {log-folder} the full-qualified path to the log folder
+
 # Limitations & issues
 1. Hardware: Up to now I could only test it with Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511) and Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662) but as long as I see it will work with all other rollerhutters the same way. Not supported are intelligent switches, heating thermostat e.g.. 
 But I think integration of them would be easy (io broker solution already has it:  [io broker API implementation](https://github.com/homecineplexx/ioBroker.homepilot20)). Additional conditions based on the unique  device number which identifies the product could make integration in the script simple. For example *device number* 14234511 are above mentioned rollershutters and 35000662 is the mentioned actor. 
