@@ -24,7 +24,7 @@ def close_logfile():
 def log_message(message):
     now = datetime.datetime.now()
     message = now.strftime("%d.%m.%Y %H:%M:%S  ") + message
-    print message
+    print(message)
     global log_file
     log_file.write(message + "\n")
 
@@ -89,9 +89,9 @@ def on_set_message(client, userdata, message):
                     send_data = json.loads(hp_send_data_gotopos_tmpl)     
                     send_data["value"] = message.payload            
 
-            #is stop comand            
+            #is stop comand            pip p
             elif str(message.payload) == "STOP":
-                print "message is stop"
+                print("message is stop")
                 send_data = json.loads(hp_send_data_stop_tmpl)  
             
             else:
@@ -116,9 +116,9 @@ def on_set_message(client, userdata, message):
 # main
 #variables
 headers = {"Content-Type": "application/json"}
-cfg_file_name = "hp2mqtt.yaml"
-log_file_name = "hp2mqtt.log"
-dev_file_name = "device_info.json"
+cfg_file_name = "data/hp2mqtt.yaml"
+log_file_name = "log/hp2mqtt.log"
+dev_file_name = "data/device_info.json"
 
 mqtt_connected = False
 mqtt_broker_address= "localhost"
