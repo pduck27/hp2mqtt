@@ -24,7 +24,7 @@ def close_logfile():
 def log_message(message):
     now = datetime.datetime.now()
     message = now.strftime("%d.%m.%Y %H:%M:%S  ") + message
-    print(message)
+    print str(message)
     global log_file
     log_file.write(message + "\n")
 
@@ -45,9 +45,9 @@ def on_set_message(client, userdata, message):
         if topic_arr[0] != mqtt_channel :
             raise Exception("MQTT Channel mismatchs. Expected -> " + mqtt_channel)
         elif topic_arr[1] == "" :
-            raise Exception("MQTT item not identified");
+            raise Exception("MQTT item not identified")
         elif topic_arr[2] == "" : 
-            raise Exception("MQTT message not identified");
+            raise Exception("MQTT message not identified")
         else:
             log_message("Identified valid mqtt message: %s/%s/%s %s" % (topic_arr[0], topic_arr[1], topic_arr[2], message.payload))
 
@@ -89,7 +89,7 @@ def on_set_message(client, userdata, message):
                     send_data = json.loads(hp_send_data_gotopos_tmpl)     
                     send_data["value"] = message.payload            
 
-            #is stop comand            pip p
+            #is stop comand            
             elif str(message.payload) == "STOP":
                 print("message is stop")
                 send_data = json.loads(hp_send_data_stop_tmpl)  
