@@ -20,7 +20,16 @@ Clone the project or just copy the *hp2mqtt.py* and *hp2mqtt.yaml.sample* files 
 Important is the *did*-part, this device number you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step.
 
 Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection in the upper section. In the device section create mapping entries along to your mqtt channel and the device id.
-Test your configuration by running the script without parameter: *$python hp2mqtt.py*.
+Test your configuration by running the script without parameter:
+
+Install the libraries
+```shell script
+pip install paho.mqtt pyyaml requests
+```
+Run the application
+```shell script
+python hy2mqtt.py
+```
 
 # Usage
 The script listens to your MQTT broker's configured *mqtt_channel* (default: *hp2mqtt*) and waits for messages.
@@ -34,6 +43,18 @@ A possible configuration along to the sample-configuration is a MQTT Generic Thi
  - command topic: hp2mqtt/Rollershutter1/set
  - incoming value transformation: JSONPATH:$.state
 
+# Docker-Integration
+For using inside an containered envirionment you can create a docker-image with Dockerfile. 
+```shell script
+docker build -t pduck27/hp2mqtt .
+```
+To pass you configuration you can use the the exported volume `/opt/hp2mqtt/data`. Use the volume `/opt/hp2mqtt/log` to export the log-files.
+```shell script
+docker run -d \ 
+    -v {config-folder}:/opt/hp2mqtt/data \
+    -v {log-folder}:/opt/hp2mqtt/log \ 
+    pduck27/hp2mqtt 
+```
 
 # Limitations & issues
 1. Hardware: Up to now I could only test it with Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511) and Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662) but as long as I see it will work with all other rollerhutters the same way. Not supported are intelligent switches, heating thermostat e.g.. 
