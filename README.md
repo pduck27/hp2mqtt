@@ -6,7 +6,7 @@ Inspirations for the project I took from [zigbee2mqtt](https://github.com/koenkk
 
 # Requirements
 You need the following by now:
- - python interpreter: *$ sudo apt-get  install  python3*. followed by *$ sudo apt-get  install python*.
+ - python interpreter: *$ sudo apt-get  install  python2*. followed by *$ sudo apt-get  install python2*. There are some problems with latest Python 3 version, so better use version 2 until they are fixed.
  - Maybe additional python libraries like yaml must be installed in addition (script will blame missing libraries). Best by using pip installer like this: *$ pip install pyyaml*.
  - A running MQTT broker like [Mosquitto](https://mosquitto.org/).
  - A Rademacher HomePilot configured. **Attention:** By now only HomePilot without local User/Pwd are supported. You can test if the API is running by opening the following URL in a browser *http://[HomePilot IP address]/v4/devices* when connected to the same network as HomePilot. If successfull, you should see a JSON text output with several information about your devices like this:
