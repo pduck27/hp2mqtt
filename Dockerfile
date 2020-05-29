@@ -1,4 +1,4 @@
-FROM python
+FROM python:alpine
 
 RUN pip install paho.mqtt pyyaml requests
 
