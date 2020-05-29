@@ -24,7 +24,7 @@ def close_logfile():
 def log_message(message):
     now = datetime.datetime.now()
     message = now.strftime("%d.%m.%Y %H:%M:%S  ") + message
-    print str(message)
+    print (str(message))
     global log_file
     log_file.write(message + "\n")
 
