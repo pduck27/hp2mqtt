@@ -5,6 +5,7 @@ system:
   mqtt_password: ""
   mqtt_channel: "hp2mqtt"
   hp_host: "199.100.10.1"
+  hp_pwd: ""
 
 devices:
   Rollershutter1: "1010000"

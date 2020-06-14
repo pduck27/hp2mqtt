@@ -7,6 +7,7 @@ import sys
 import yaml
 import datetime
 import atexit
+import hashlib
 
 #def 
 def is_integer(n):
@@ -17,9 +18,11 @@ def is_integer(n):
     else:
         return float(n).is_integer()
 
+
 def close_logfile():
     global log_file
     log_file.close
+
 
 def log_message(message):
     now = datetime.datetime.now()
@@ -28,13 +31,58 @@ def log_message(message):
     global log_file
     log_file.write(message + "\n")
 
+
+def try_authentication():
+    try:       
+        return_data = {}
+        response = requests.post(hp_host + "/authentication/password_salt")
+        if response.status_code == 200:
+            # get password_salt
+            return_data = response.json()            
+            pwd = hashlib.sha256()
+            pwd.update(hp_pwd)
+            
+            # build pass-string with salt and individual password
+            pwd_salted = hashlib.sha256()
+            pwd_salted.update(return_data["password_salt"])
+            pwd_salted.update(pwd.hexdigest())
+
+            send_data = json.loads(hp_send_data_login_tmpl)     
+            send_data["password"] = pwd_salted.hexdigest()
+            send_data["password_salt"] = return_data["password_salt"]            
+            
+            response = requests.post(hp_host + "/authentication/login", json=send_data, headers=headers)
+            if response.status_code == 200:                
+                global cookies
+                cookies = response.cookies
+                log_message("Authentication succesfull, got a tasty cookie :) ")
+            else:
+                raise Exception("%s: %s" % (response.status_code, response.text))
+
+        else:
+            raise Exception("Error while getting password salt: %s: %s" % (response.status_code, response.text))
+
+        
+    except Exception as e :        
+        if response.status_code == 500:
+            json_data = json.loads(response.text)
+            if json_data["error_code"] == 5007:
+                log_message("Authentication is disabled, continue without password.")
+                return
+
+        
+        log_message("Authentication error, maybe wrong password? " + response.text)
+        raise SystemExit(e)
+
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        log_message("Connected to mqtt broker")
+        log_message("Connected to mqtt broker.")
         global mqtt_connected                
         mqtt_connected = True                
     else:
-        log_message("Connection to mqtt broker failed")
+        log_message("Connection to mqtt broker failed.")
+
 
 def on_set_message(client, userdata, message):      
     log_message("Received message: %s %s" % (message.topic, message.payload))
@@ -43,19 +91,19 @@ def on_set_message(client, userdata, message):
     topic_arr = message.topic.split("/")
     try:
         if topic_arr[0] != mqtt_channel :
-            raise Exception("MQTT Channel mismatchs. Expected -> " + mqtt_channel)
+            raise Exception("MQTT Channel mismatchs. Expected: %s" % (mqtt_channel))
         elif topic_arr[1] == "" :
-            raise Exception("MQTT item not identified")
+            raise Exception("MQTT item not identified.")
         elif topic_arr[2] == "" : 
-            raise Exception("MQTT message not identified")
+            raise Exception("MQTT message not identified.")
         else:
             log_message("Identified valid mqtt message: %s/%s/%s %s" % (topic_arr[0], topic_arr[1], topic_arr[2], message.payload))
 
         curr_item = mqtt_items.get(topic_arr[1]) 
-        log_message("Identified valid item id: " + curr_item)
+        log_message("Identified valid item id: %s" % (curr_item))
 
     except Exception as e :        
-        log_message("Invalid mqtt message: " + str(e))
+        log_message("Invalid mqtt message: %s" % (str(e)))
         return
 
     #execute comand
@@ -64,19 +112,19 @@ def on_set_message(client, userdata, message):
         try:
             new_last_cmd_value = message.payload
             if curr_item in mqtt_last_cmd:
-                log_message("Last cmd found for %s: %s" % (curr_item, mqtt_last_cmd[curr_item]))
+                log_message("Last comand found for %s: %s" % (curr_item, mqtt_last_cmd[curr_item]))
                 if mqtt_last_cmd[curr_item] == message.payload:
-                    log_message("Last cmd is new comand, so I will send STOP cmd.")
+                    log_message("Last comand is new comand, so I will send STOP comand.")
                     message.payload = "STOP"
                     new_last_cmd_value = ""                    
             else:
-                log_message("No last comand found for: " + curr_item)
+                log_message("No last comand found for: %s" % (curr_item))
 
             mqtt_last_cmd[curr_item] = new_last_cmd_value
-            log_message("New last comand for %s: %s" % (mqtt_last_cmd[curr_item], new_last_cmd_value))         
+            log_message("Remember last comand for %s: %s" % (curr_item, new_last_cmd_value))         
 
         except Exception as e :
-            log_message("Stop comand check was unsuccessful: " + str(e))
+            log_message("Stop comand check was unsuccessful: %s" % (str(e)))
             return
 
         # prepare comand
@@ -90,8 +138,7 @@ def on_set_message(client, userdata, message):
                     send_data["value"] = message.payload            
 
             #is stop comand            
-            elif str(message.payload) == "STOP":
-                print("message is stop")
+            elif str(message.payload) == "STOP":                
                 send_data = json.loads(hp_send_data_stop_tmpl)  
             
             else:
@@ -103,11 +150,11 @@ def on_set_message(client, userdata, message):
 
         # send comand        
         try:   
-            log_message("Try to send : " + send_comand + " with " + json.dumps(send_data))
-            response = requests.put(send_comand, json.dumps(send_data), headers=headers)             
+            log_message("Try to send : %s with %s." % (send_comand, json.dumps(send_data)))            
+            response = requests.put(send_comand, json.dumps(send_data), headers=headers, cookies=cookies)             
 
         except Exception as e :
-            log_message("Request to HomePilot was unsuccessful: " + str(e))
+            log_message("Request to HomePilot was unsuccessful: %s" % (str(e)))
             return
 
         parsed_json = json.loads(response.text)            
@@ -116,6 +163,7 @@ def on_set_message(client, userdata, message):
 # main
 #variables
 headers = {"Content-Type": "application/json"}
+cookies = {}
 cfg_file_name = "data/hp2mqtt.yaml"
 log_file_name = "log/hp2mqtt.log"
 dev_file_name = "data/device_info.json"
@@ -130,10 +178,12 @@ mqtt_items = {}
 mqtt_last_cmd = {}
 
 hp_host = "http://"
+hp_pwd = ""
 hp_devices_url_cmd_part = "devices"
 hp_devices_url_list_part = "v4/devices"
 hp_send_data_gotopos_tmpl = '{"name": "GOTO_POS_CMD", "value": "0"}'
 hp_send_data_stop_tmpl = '{"name": "STOP_CMD"}'
+hp_send_data_login_tmpl = '{"password": "saltedPassword", "password_salt": "passwordSalt"}'
 
 # delete log file
 log_file = open(log_file_name, "w")
@@ -161,6 +211,9 @@ try:
 
         if config_dict_sys.get("mqtt_channel"): 
           mqtt_channel = config_dict_sys["mqtt_channel"]       
+
+        if config_dict_sys.get("hp_pwd"):
+          hp_pwd = config_dict_sys["hp_pwd"]
         
         if config_dict_sys.get("hp_host"): 
           hp_host = hp_host + config_dict_sys["hp_host"]
@@ -168,28 +221,31 @@ try:
         # devices
         mqtt_items = config_dict["devices"]
         
-        log_message("Configuration loaded incl. following items: " + str(mqtt_items))
+        log_message("Configuration loaded incl. following items: %s" % (str(mqtt_items)))
 
 
 except Exception as e:
     log_message("Error while reading configuration file %s: %s" % (cfg_file_name, str(e)))
     raise SystemExit(e)
 
-# get device list if requested via startup paramter -d
+# try authorization request
+try_authentication()
+
+# get device list if requested via startup parameter -d
 if len(sys.argv) > 1:
     if sys.argv[1] == "-d":
-        log_message("Get HomePilot device list: " + hp_host)
+        log_message("Get HomePilot device list: %s" % (hp_host))
         try:
-            response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part))
+            log_message(str(cookies))
+            response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
                 
-            log_message("Connection established successfully")
-            parsed_json = (json.loads(response.text))
-            log_message(json.dumps(parsed_json, indent=4, sort_keys=True))
-
-            device_info_file = open(dev_file_name, "w")
-            # issue with encoding device_info_file.write(response.text)
-            device_info_file.close
-            log_message("File %2 update with current device list." % (dev_file_name))
+            log_message("Connection established successfully.")            
+            parsed_json = (json.loads(response.text))            
+            log_message(json.dumps(parsed_json, indent=4, sort_keys=True))            
+            device_info_file = open(dev_file_name, "w")            
+            device_info_file.write(response.text.encode('utf-8').strip())
+            device_info_file.close            
+            log_message("File %s updated with current device list." % (dev_file_name))
             sys.exit(0)
 
         except requests.exceptions.RequestException as e:
@@ -197,7 +253,7 @@ if len(sys.argv) > 1:
             raise SystemExit(e)
 
         except Exception as e:
-            log_message("Error during device investigation: " + str(e))
+            log_message("Error during device investigation: %s" % (str(e)))
             raise SystemExit(e)
         
 
@@ -221,6 +277,6 @@ try:
         time.sleep(1)
 
 except KeyboardInterrupt:
-    log_message("exiting")
+    log_message("Exiting")
     client.disconnect()
     client.loop_stop()
