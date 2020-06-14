@@ -9,7 +9,7 @@ You need the following by now:
  - python interpreter: *$ sudo apt-get  install  python2*, followed by *$ sudo apt-get  install python2*. There are some problems with latest Python 3 version, so better use version 2 until they are fixed.
  - Maybe additional python libraries like yaml must be installed in addition (script will blame missing libraries). Best by using pip installer like this: *$ pip install pyyaml*.
  - A running MQTT broker like [Mosquitto](https://mosquitto.org/).
- - A Rademacher HomePilot configured. **Attention:** By now only HomePilot without local User/Pwd are supported. You can test if the API is running by opening the following URL in a browser *http://[HomePilot IP address]/v4/devices* when connected to the same network as HomePilot. If successfull, you should see a JSON text output with several information about your devices like this:
+ - A Rademacher HomePilot configured. You can test if the API is running by opening the following URL in a browser *http://[HomePilot IP address]/v4/devices* when connected to the same network as HomePilot. If successfull, you should see a JSON text output with several information about your devices like this:
  ![device api call](/readme_images/device_api_call.png)
 
 
@@ -17,7 +17,7 @@ You need the following by now:
 Clone the project or just copy the *hp2mqtt.py* and *hp2mqtt.yaml.sample* files to a directory.  Rename the sample file to *hp2mqtt.yaml* and open in editor. Enter a valid IP of your HomePilot to *hp_host*. Make a first run with the parameter *-d* for device identification: *$ python hp2mqtt.py -d*. You should get some logging on the screen and finally see a JSON construct with some device information.
 ![device log output](/readme_images/device_log.png)
 
-Important is the *did*-part, this device number you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step.
+Important is the *did*-part, this device number you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output in the "device-info.json" file in the data subdirectory, too.
 
 Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection in the upper section. In the device section create mapping entries along to your mqtt channel and the device id.
 Test your configuration by running the script without parameter:
