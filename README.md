@@ -17,7 +17,7 @@ You need the following by now:
 Clone the project or just copy the *hp2mqtt.py* and *hp2mqtt.yaml.sample* files to a directory.  Rename the sample file to *hp2mqtt.yaml* and open in editor. Enter a valid IP of your HomePilot to *hp_host*. Make a first run with the parameter *-d* for device identification: *$ python hp2mqtt.py -d*. You should get some logging on the screen and finally see a JSON construct with some device information.
 ![device log output](/readme_images/device_log.png)
 
-Important is the *did*-part, this device number you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output in the "device-info.json" file in the data subdirectory, too.
+Important is the *did*-part, this device number you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output in the *device-info.json* file in the data subdirectory, too.
 
 Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection in the upper section. In the device section create mapping entries along to your mqtt channel and the device id.
 Test your configuration by running the script without parameter:
