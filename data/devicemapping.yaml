@@ -1,0 +1,9 @@
+knowndevices:
+ 14234511: "RolloTron Standard DuoFern 1400/1440/1405"
+ 35000662: "DuoFern Rohrmotor-Aktor"
+ 35001164: "DuoFern Zwischenstecker Schalten 9472"
+
+mapping:
+ 14234511: "rollershutter"
+ 35000662: "rollershutter"
+ 35001164: "switch"
