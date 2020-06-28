@@ -2,6 +2,7 @@
 
 hp2mqtt is a python proxy script to interact between [Rademacher](www.rademacher.de) HomePilot and a MQTT broker. It was mainly written to support [openhab](https://www.openhab.org/) communication to Rademacher HomePilot but it can be used for other implementations, too.
 Be aware, the used Home Pilot interface is not officially supported by Rademacher. Therefore you use it on your own risk without warranty.
+
 Inspirations for the project I took from [zigbee2mqtt](https://github.com/koenkk/zigbee2mqtt) and [io broker API implementation](https://github.com/homecineplexx/ioBroker.homepilot20). I also got a well support from Rademacher to realize it.
 
 # Requirements
@@ -18,7 +19,9 @@ pip install paho.mqtt pyyaml requests
 
 # Installation
 Clone the project or just copy the *hp2mqtt.py* file and the *data* directory to a local directory.  Rename the sample configuration file to *hp2mqtt.yaml* and open it in an  editor. Enter a valid IP of your HomePilot for *hp_host*. Make a first run with the parameter *-f* for device identification: *$ python hp2mqtt.py -f*. You should get some logging on the screen and finally see a JSON construct with some device information like this.
+
 ![device log output](/readme_images/device_log.png)
+
 If not, you will get some error messages, maybe a password is missing or the host address is wrong. Reagrding the device information from HomePilot the most important part is the *did*-part. This unique device id you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output not only on the screen but also in the *device-info.json* file in the data subdirectory.
 
 Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection in the upper section. In the device section create mapping entries along to your mqtt channel and the device id. Test your configuration by running the script without parameter:
@@ -26,12 +29,16 @@ Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection i
 python hy2mqtt.py
 ```
 
-Another important file is the *devicemapping.yaml* in the data directory. Next to the *did*, which is the unique device id in your HomePilot, you also find a *DeviceNumber* in the devices list. This is a kind of unique model id from Rademacher. For example the *14234511* corresponds to *RolloTron Standard DuoFern 1400/1440/1405* devices. The file in the project contains in the first section all devices of type rollershutter and switch I know or copied from io-broker implementation. This is just for your information of supported devices. In the second part *mapping* you tell the script how to tread your devices (e.g. like a rollershutter, switch). So if your device number is not there you can just add the number and the type in the mapping section. The ones you find in the sample file in section *mapping* are those I could definitly test. Please let me know when you could test additional types or update the project. Sounds complicate? Maybe but with this solution you do not need to change the script when a new device is on the market and you get an idea which device types are supported (in the *mapping* section of the project here), which one should work (listed under *knowndevices* but not in *mapping* section and which one are definitly not supported (not listed). 
+Another important file is the *devicemapping.yaml* in the data directory. Next to the *did*, which is the unique device id in your HomePilot, you also find a *DeviceNumber* in the devices list. This is a kind of unique model id from Rademacher. For example the *14234511* corresponds to *RolloTron Standard DuoFern 1400/1440/1405* devices. The file in the project contains in the first section all devices of type rollershutter and switch I know or copied from io-broker implementation. This is just for your information of supported devices. In the second part *mapping* you tell the script how to tread your devices (e.g. like a rollershutter, switch). So if your device number is not there you can just add the number and the type in the mapping section. The ones you find in the sample file in section *mapping* are those I could definitly test. 
+
+Please let me know when you could test additional types or update the project. Sounds complicate? Maybe but with this solution you do not need to change the script when a new device is on the market and you get an idea which device types are supported (in the *mapping* section of the project here), which one should work (listed under *knowndevices* but not in *mapping* section and which one are definitly not supported (not listed). 
 
 # Usage
 The script listens to your MQTT broker's configured *mqtt_channel* (default: *hp2mqtt*) and waits for messages.
+
 As an example, a MQTT message */hp2mqtt/Rollershutter1/set 50* is received. The script tries first to identify *Rollershutter1* device id along to the configuration file and checks the device type mapping (e.g. rollershutter). If this was successfull it tries to identify the following topic action *set* and the given payload after *set*. 
 For rollershutter types  it will check if the payload value is an integer between 0 and 100. If this is successfull it will send the API call to move *Rollershutter1* at position 50% to the HomePilot. If you send the same payload twice it indicates a stop. This is necessary because openhab does not explictly send a stop comand but 0 position. 
+
 For switch types the set comand only accepts *on* or *off* values.
 
 For more information about how to integrate mqtt binding in openhab please refer to [https://www.openhab.org/addons/bindings/mqtt/](https://www.openhab.org/addons/bindings/mqtt/). 
@@ -62,6 +69,7 @@ docker run -d \
  - Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511)
  - Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662)
  - Switch [DuoFern Zwischenstecker Schalten 9472](https://www.rademacher.de/smart-home/produkte/duofern-zwischenstecker-schalten-9472?productID=35001164)
+ 
  But as long as I see it will work with all other rollerhutters and switches the same way. Please check the mappingfile for the *knowndevices* which should work.
  
 2. State Topic: The state topic is not supported yet to request the state of rollershutters back when they are moved by using the manual switches.
