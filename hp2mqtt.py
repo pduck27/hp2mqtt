@@ -289,7 +289,7 @@ try:
                         raise Exception("Device with did %s couldn't configure because of missing device number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name))
                     mqtt_items_new[mqtt_item] = property_list
                     log_message("Device with did %s found. Added with device number %s and mapped type '%s'." % (property_list[0], property_list[1], property_list[2]))
-                    break;
+                    break
         else:                
             log_message("Device with did %s is not configured and will be ignored." % (hp_device["did"]))
 
