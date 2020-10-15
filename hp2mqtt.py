@@ -1,5 +1,5 @@
 # todo
-#  "Position": 210, "acttemperatur": 209
+#  "Position": 210, "acttemperatur": 209 besser umsetzen
 
 #import
 import paho.mqtt.client as mqttClient
