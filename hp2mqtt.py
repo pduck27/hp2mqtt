@@ -1,5 +1,6 @@
 # todo
-#  "Position": 210, "acttemperatur": 209 besser umsetzen
+#  "Position": 210, "acttemperatur": 209 besser umsetzen las mit _ heute? 
+# saber machen, kommentieren, dokumentieren
 
 #import
 import paho.mqtt.client as mqttClient
@@ -92,31 +93,23 @@ def try_deviceUpdate():
             for hp_device in parsed_json["devices"]:
                 if hp_device["did"] == mqtt_items[mqtt_item][0]:
                     #log_message(str(hp_device["statusesMap"]))
-                    if mqtt_items[mqtt_item][2].lower() == "rollershutter":                          
-                        mqtt_items_state[mqtt_item] = hp_device["statusesMap"]["Position"]
-                    elif mqtt_items[mqtt_item][2].lower() == "heating":                                                
-                       mqtt_items_state[mqtt_item + "_temp"] = hp_device["statusesMap"]["acttemperatur"] / 10
-                       mqtt_items_state[mqtt_item + "_position"] = hp_device["statusesMap"]["Position"] / 10
-                    elif mqtt_items[mqtt_item][2].lower() == "switch": 
-                        if hp_device["statusesMap"]["Position"] == 100:
-                            mqtt_items_state[mqtt_item] = "ON"
-                        else:
-                            mqtt_items_state[mqtt_item] = "OFF"
-                    else:
-                        raise Exception("Device with did %s couldn't read state because type %s is unknown in state check. Please add status mapping." % (hp_device["did"], mqtt_items[mqtt_item][2].lower()))
-
+                    mqtt_items_state[mqtt_item] = hp_device["statusesMap"]
+                    if mqtt_items[mqtt_item][2].lower() == "heating":
+                        mqtt_items_state[mqtt_item]["Position"] = mqtt_items_state[mqtt_item]["Position"] / 10
+                        mqtt_items_state[mqtt_item]["acttemperatur"] = mqtt_items_state[mqtt_item]["acttemperatur"] / 10
+ #                   
         if (not mqtt_items_state is None):           
                 log_message("Status found: %s" % (mqtt_items_state))                                                             
-                for mqtt_item_state in mqtt_items_state:
-                    client.publish("%s/%s/state" % (mqtt_channel, mqtt_item_state), mqtt_items_state[mqtt_item_state])          
+                for mqtt_item_state in mqtt_items_state:                     
+                    client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))          
             
     except Exception as e:
-                log_message("Error during MQTT state update: %s" % (str(e)))
+                log_message("Error during MQTT status update: %s" % (str(e)))
                 raise SystemExit(e)
 
 
 def on_publish(client,userdata,result):             #create function for callback
-    print("State published successfully: %s " % (result))
+    log_message("State published successfully: %s " % (result))
     
 
 def try_deviceInitialization():
@@ -193,7 +186,7 @@ def on_set_message(client, userdata, message):
         curr_device_name = topic_arr[1].lower()
         curr_topic_cmd = topic_arr[2].lower()
         curr_topic_payload = message.payload.lower()
-        if curr_topic_cmd == "state":
+        if curr_topic_cmd == "status":
             log_message("Ignore processing of state message.")
             return
         else:
@@ -239,7 +232,8 @@ def on_set_message(client, userdata, message):
         try:
             global mqtt_update_countdown
             new_update_countdown = mqtt_update_countdown
-            send_comand = "%s/%s/%s" % (hp_host, hp_devices_url_cmd_part, curr_device_did)     
+            send_comand = "%s/%s/%s" % (hp_host, hp_devices_url_cmd_part, curr_device_did)  
+            send_data = ""  
 
             # rollershutter
             if curr_device_type == "rollershutter":          
@@ -247,21 +241,28 @@ def on_set_message(client, userdata, message):
                     if int(curr_topic_payload) >= 0 and int(curr_topic_payload) <= 100 :    
                         send_data = json.loads(hp_send_data_gotopos_tmpl)     
                         send_data["value"] = curr_topic_payload    
-                        new_update_countdown = 15        
+                        new_update_countdown = 15    
+                    else:
+                        raise Exception("Can not process payload: %s" % (curr_topic_payload))
 
                 
                 elif str(curr_topic_payload) == "stop":                
                     send_data = json.loads(hp_send_data_stop_tmpl)  
                     new_update_countdown = 3
+                else:
+                    raise Exception("Can not process payload: %s" % (curr_topic_payload))
             
             # switch
             elif curr_device_type == "switch": 
-                if str(curr_topic_payload) == "on":                
+                if str(curr_topic_payload) in ["on", "1", "100"]:                
                     send_data = json.loads(hp_send_data_on_tmpl) 
 
                 #is OFF comand  like for a switch
-                elif str(curr_topic_payload) == "off":                
+                elif str(curr_topic_payload) in ["off", "0"]:                
                     send_data = json.loads(hp_send_data_off_tmpl) 
+
+                else:
+                    raise Exception("Can not process payload: %s" % (curr_topic_payload))
 
                 new_update_countdown = 3
 
