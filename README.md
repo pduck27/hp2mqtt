@@ -31,7 +31,7 @@ python hy2mqtt.py
 
 Another important file is the *devicemapping.yaml* in the data directory. Next to the *did*, which is the unique device id in your HomePilot, you also find a *DeviceNumber* in the devices list. This is a kind of unique model id from Rademacher. For example the *14234511* corresponds to *RolloTron Standard DuoFern 1400/1440/1405* devices. The file in the project contains in the first section all devices of type rollershutter and switch I know or copied from io-broker implementation. This is just for your information of supported devices. In the second part *mapping* you tell the script how to tread your devices (e.g. like a rollershutter, switch). So if your device number is not there you can just add the number and the type in the mapping section. The ones you find in the sample file in section *mapping* are those I could definitly test. 
 
-Please let me know when you could test additional types or update the project. Sounds complicate? Maybe but with this solution you do not need to change the script when a new device is on the market and you get an idea which device types are supported (in the *mapping* section of the project here), which one should work (listed under *knowndevices* but not in *mapping* section and which one are definitly not supported (not listed). 
+Please let me know when you could test additional types or update the project. Sounds complicate? Maybe but with this solution you do not need to change the script when a new device is on the market and you get an idea which device types are supported (in the *mapping* section of the project here), which one should work (listed under *knowndevices* but not in *mapping* section and which one are definitly unknown. 
 
 # Usage
 The script listens to your MQTT broker's configured *mqtt_channel* (default: *hp2mqtt*) and waits for messages.
@@ -39,13 +39,19 @@ The script listens to your MQTT broker's configured *mqtt_channel* (default: *hp
 As an example, a MQTT message */hp2mqtt/Rollershutter1/set 50* is received. The script tries first to identify *Rollershutter1* device id along to the configuration file and checks the device type mapping (e.g. rollershutter). If this was successfull it tries to identify the following topic action *set* and the given payload after *set*. 
 For rollershutter types  it will check if the payload value is an integer between 0 and 100. If this is successfull it will send the API call to move *Rollershutter1* at position 50% to the HomePilot. If you send the same payload twice it indicates a stop. This is necessary because openhab does not explictly send a stop comand but 0 position. 
 
-For switch types the set comand only accepts *on* or *off* values.
+For switch types the set comand accepts *on*, *1*, *100* or *off*, *0* values.
+
+For heating type the set comand accepts integer and decimal.
 
 For more information about how to integrate mqtt binding in openhab please refer to [https://www.openhab.org/addons/bindings/mqtt/](https://www.openhab.org/addons/bindings/mqtt/). 
 A possible configuration along to the sample-configuration is a MQTT Generic Thing with: 
- - state topic: hp2mqtt/Rollershutter1/state
+ - state topic: hp2mqtt/Rollershutter1/status
  - command topic: hp2mqtt/Rollershutter1/set
- - incoming value transformation: JSONPATH:$.state
+ - incoming value transformation: JSONPATH:$.status
+
+ The script supports a periodical status request. Each *mqtt_update_sec* seconds it checks all known devices and sends a payload of the *statusesMap*-part of Home Pilot's response (you remember the one where you check the did value?) to the mqtt channel status. 
+ For a rollershutter it looks like this: {"Manuellbetrieb": 0, "Position": 95} where *Position* is the shutter position in percent. You can get it via JSONPATH like this *JSONPATH:$.Position*.
+ For a heating it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload because of Celsius unit of measure. 
  
 
 # Docker-Integration
@@ -65,11 +71,16 @@ docker run -d \
 - {log-folder} the full-qualified path to the log folder
 
 # Limitations & issues
-1. Up to now I could test it with the following hardware components:
+Up to now I could test it with the following hardware components:
  - Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511)
  - Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662)
  - Switch [DuoFern Zwischenstecker Schalten 9472](https://www.rademacher.de/smart-home/produkte/duofern-zwischenstecker-schalten-9472?productID=35001164)
+ - Heating Control [DuoFern Heizkörperstellantrieb 9433 (Version 1)] (https://www.rademacher.de/smart-home/produkte/duofern-heizkoerperstellantrieb-9433?productID=35003074)
  
- But as long as I see it will work with all other rollerhutters and switches the same way. Please check the mappingfile for the *knowndevices* which should work.
+ But as long as I see it will work with all other devices of the same family in the same way. Please check the mappingfile for the *knowndevices* which should work.
  
-2. State Topic: The state topic is not supported yet to request the state of rollershutters back when they are moved by using the manual switches.
+ # Latest release notes
+ - The heating control integration has place for improvement like the handling with units of measure.
+ - The code itself is a little bit blown now. It needs some re-design.
+ - Periodical status updates via MQTT are integrated.
+ - Heating control as a new type is integrated.

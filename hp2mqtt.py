@@ -1,6 +1,5 @@
 # todo
-#  "Position": 210, "acttemperatur": 209 besser umsetzen las mit _ heute? 
-# saber machen, kommentieren, dokumentieren
+# sauber machen, kommentieren, dokumentieren
 
 #import
 import paho.mqtt.client as mqttClient

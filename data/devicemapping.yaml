@@ -22,7 +22,7 @@ knowndevices:
  32501972: "DuoFern-Mehrfachwandtaster-230V-9494-2"
  32501772: "DuoFern-Bewegungsmelder-9484"
 
- # heating thermostat
+ # heating control
  35003064: "DuoFern Heizkörperstellantrieb 9433"
 
 mapping:
@@ -30,3 +30,4 @@ mapping:
  35000662: "rollershutter"
  35001164: "switch"
  35003064: "heating"
+ # add your missing device numbers here
