@@ -41,7 +41,7 @@ For rollershutter types  it will check if the payload value is an integer betwee
 
 For switch types the set comand accepts *on*, *1*, *100* or *off*, *0* values.
 
-For heating type the set comand accepts integer and decimal.
+For heating type the set comand accepts everything by now but should be an integer in most cases.
 
 For more information about how to integrate mqtt binding in openhab please refer to [https://www.openhab.org/addons/bindings/mqtt/](https://www.openhab.org/addons/bindings/mqtt/). 
 A possible configuration along to the sample-configuration is a MQTT Generic Thing with: 
@@ -50,8 +50,10 @@ A possible configuration along to the sample-configuration is a MQTT Generic Thi
  - incoming value transformation: JSONPATH:$.status
 
  The script supports a periodical status request. Each *mqtt_update_sec* seconds it checks all known devices and sends a payload of the *statusesMap*-part of Home Pilot's response (you remember the one where you check the did value?) to the mqtt channel status. 
+
  For a rollershutter it looks like this: {"Manuellbetrieb": 0, "Position": 95} where *Position* is the shutter position in percent. You can get it via JSONPATH like this *JSONPATH:$.Position*.
- For a heating it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload because of Celsius unit of measure. 
+
+ For a heating controls it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload because of Celsius unit of measure. 
  
 
 # Docker-Integration
@@ -75,7 +77,7 @@ Up to now I could test it with the following hardware components:
  - Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511)
  - Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662)
  - Switch [DuoFern Zwischenstecker Schalten 9472](https://www.rademacher.de/smart-home/produkte/duofern-zwischenstecker-schalten-9472?productID=35001164)
- - Heating Control [DuoFern Heizkörperstellantrieb 9433 (Version 1)] (https://www.rademacher.de/smart-home/produkte/duofern-heizkoerperstellantrieb-9433?productID=35003074)
+ - Heating Control [DuoFern Heizkörperstellantrieb 9433 (Version 1)](https://www.rademacher.de/smart-home/produkte/duofern-heizkoerperstellantrieb-9433?productID=35003074)
  
  But as long as I see it will work with all other devices of the same family in the same way. Please check the mappingfile for the *knowndevices* which should work.
  
