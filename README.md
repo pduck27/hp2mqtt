@@ -41,7 +41,7 @@ For rollershutter types  it will check if the payload value is an integer betwee
 
 For switch types the set comand accepts *on*, *1*, *100* or *off*, *0* values.
 
-For heating type the set comand accepts everything by now but should be an integer in most cases.
+For heating type the set comand accepts everything because of different number formats and units of measure. But it should be a kind of valid integer or decimal number finally. If not, you will get an error from the HomePilot.
 
 For more information about how to integrate mqtt binding in openhab please refer to [https://www.openhab.org/addons/bindings/mqtt/](https://www.openhab.org/addons/bindings/mqtt/). 
 A possible configuration along to the sample-configuration is a MQTT Generic Thing with: 
@@ -53,7 +53,7 @@ A possible configuration along to the sample-configuration is a MQTT Generic Thi
 
  For a rollershutter it looks like this: {"Manuellbetrieb": 0, "Position": 95} where *Position* is the shutter position in percent. You can get it via JSONPATH like this *JSONPATH:$.Position*.
 
- For a heating controls it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload because of Celsius unit of measure. 
+ For a heating controls it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload. 
  
 
 # Docker-Integration

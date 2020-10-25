@@ -1,6 +1,3 @@
-# todo
-# sauber machen, kommentieren, dokumentieren
-
 #import
 import paho.mqtt.client as mqttClient
 import time
@@ -263,14 +260,14 @@ def on_set_message(client, userdata, message):
                 else:
                     raise Exception("Can not process payload: %s" % (curr_topic_payload))
 
-                new_update_countdown = 3
+                new_update_countdown = 5
 
-            # heating
-            elif curr_device_type == "heating":
+            # heating (no further check for integer values because of different formats)
+            elif curr_device_type == "heating":                 
                 send_data = json.loads(hp_send_data_temperature_tmpl)     
                 send_data["value"] = curr_topic_payload  
-
-                new_update_countdown = 3
+                new_update_countdown = 5
+               
 
             # not implemented 
             else:
