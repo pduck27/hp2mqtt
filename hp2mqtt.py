@@ -300,7 +300,7 @@ log_file_name = "log/hp2mqtt.log"
 dev_file_name = "data/device_info.json"
 client = mqttClient.Client()  
 logfile_next_check_date = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-logfile_countdown_default = 14400;
+logfile_countdown_default = 14400
 logfile_check_countdown = logfile_countdown_default
 
 mqtt_connected = False
