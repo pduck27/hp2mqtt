@@ -82,7 +82,9 @@ Up to now I could test it with the following hardware components:
  But as long as I see it will work with all other devices of the same family in the same way. Please check the mappingfile for the *knowndevices* which should work.
  
  # Latest release notes
+ - Simple cut off log file after one day
  - The heating control integration has place for improvement like the handling with units of measure.
  - The code itself is a little bit blown now. It needs some re-design.
  - Periodical status updates via MQTT are integrated.
  - Heating control as a new type is integrated.
+ 

@@ -298,7 +298,10 @@ mapping_file_name = "data/devicemapping.yaml"
 device_mapping = {}
 log_file_name = "log/hp2mqtt.log"
 dev_file_name = "data/device_info.json"
-client = mqttClient.Client()   
+client = mqttClient.Client()  
+logfile_next_check_date = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+logfile_countdown_default = 14400;
+logfile_check_countdown = logfile_countdown_default
 
 mqtt_connected = False
 mqtt_broker_address= "localhost"
@@ -407,10 +410,24 @@ mqtt_update_countdown = mqtt_update_sec
 try:
     while True:
         time.sleep(1)
+        
+        # main routine
         mqtt_update_countdown -= 1
         if mqtt_update_countdown <= 0:
             try_deviceUpdate()
             mqtt_update_countdown = mqtt_update_sec
+        
+        # logfile check
+        logfile_check_countdown -= 1       
+        if logfile_check_countdown <= 0:
+            log_message("Check logfile age. Now = %s --> next truncate %s" % (datetime.datetime.utcnow(), logfile_next_check_date))               
+            logfile_check_countdown = logfile_countdown_default
+            if (datetime.datetime.utcnow() > logfile_next_check_date):                
+                logfile_next_check_date = datetime.datetime.utcnow() + datetime.timedelta(days=1)                
+                log_file.close
+                log_file = open(log_file_name, "w")
+                log_message("Truncate logfile now: %s" % (datetime.datetime.utcnow()))
+        
 
 except KeyboardInterrupt:
     log_message("Exiting")
