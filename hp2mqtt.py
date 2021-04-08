@@ -1,3 +1,6 @@
+# normalize device id
+# retry connection timout
+
 #import
 import paho.mqtt.client as mqttClient
 import time
