@@ -1,6 +1,3 @@
-# normalize device id
-# retry connection timout
-
 #import
 import paho.mqtt.client as mqttClient
 import time
@@ -21,6 +18,13 @@ def is_integer(n):
     else:
         return float(n).is_integer()
 
+def normalize_deviceid(deviceid):
+    # Normalizing device_id, because sometimes the have an additional _<Character> at the end
+    deviceid_str = str(deviceid)
+    if deviceid_str.find("_") != -1:
+        deviceid_str = deviceid_str[0:deviceid_str.index("_")]
+
+    return deviceid_str
 
 def close_logfile():
     global log_file
@@ -119,8 +123,15 @@ def try_deviceInitialization():
     log_message("Request HomePilot active device list: %s" % (hp_host))
     try:
         response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
-        log_message("Connection established successfully.")            
+        log_message("Connection established successfully.")                
         parsed_json = (json.loads(response.text))
+
+        # Debugging start, can overload configuration from file
+        #with open("data/device_info.json", "r") as read_file:
+        #    parsed_json = json.load(read_file)            
+        #    log_message("json file load success")                            
+        # Debugging end
+        
         for hp_device in parsed_json["devices"]:
             log_message("Search device number for device with did = %s" % (hp_device["did"]))
             if hp_device["did"] in mqtt_items.values():
@@ -128,9 +139,9 @@ def try_deviceInitialization():
                     if mqtt_items[mqtt_item] == hp_device["did"]:
                         property_list = list()
                         property_list.append(hp_device["did"])
-                        property_list.append(int(hp_device["deviceNumber"]))                    
-                        if device_mapping.get(int(hp_device["deviceNumber"])):
-                            property_list.append(device_mapping[int(hp_device["deviceNumber"])])
+                        property_list.append(int(normalize_deviceid(hp_device["deviceNumber"])))                    
+                        if device_mapping.get(int(normalize_deviceid(hp_device["deviceNumber"]))):
+                            property_list.append(device_mapping[int(normalize_deviceid(hp_device["deviceNumber"]))])
                         else:
                             raise Exception("Device with did %s couldn't configure because of missing device number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name))
                         mqtt_items_new[mqtt_item] = property_list
