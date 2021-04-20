@@ -126,10 +126,10 @@ def try_deviceInitialization():
         log_message("Connection established successfully.")                
         parsed_json = (json.loads(response.text))
 
-        # Debugging start, can overload configuration from file
-        #with open("data/device_info.json", "r") as read_file:
-        #    parsed_json = json.load(read_file)            
-        #    log_message("json file load success")                            
+        # Debugging start, can overload by reading configuration from file
+        # with open("data/device_info.json", "r") as read_file:
+        #   parsed_json = json.load(read_file)            
+        #   log_message("json file load success")                           
         # Debugging end
         
         for hp_device in parsed_json["devices"]:
