@@ -22,7 +22,7 @@ Clone the project or just copy the *hp2mqtt.py* file and the *data* directory to
 
 ![device log output](/readme_images/device_log.png)
 
-If not, you will get some error messages, maybe a password is missing or the host address is wrong. Reagrding the device information from HomePilot the most important part is the *did*-part. This unique device id you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output not only on the screen but also in the *device-info.json* file in the data subdirectory.
+If not, you will get some error messages, maybe a password is missing or the host address is wrong. Reagrding the device information from HomePilot the most important part is the *did*-part. This unique device id you need to assign the MQTT channel to your HomePilot device in the configuration file in the next step. You will find the device output not only on the screen but also in the *device-info.json* file in the data subdirectory. Please be aware, some devices have a "_A" or "_S" suffix at the end of the device id. Please ignore them, just use the number part before the underscore. The code will cut the suffix away if necessary.
 
 Edit the *hp2mqtt.yaml* again and enter the requested data for mqtt connection in the upper section. In the device section create mapping entries along to your mqtt channel and the device id. Test your configuration by running the script without parameter:
 ```shell script
