@@ -25,9 +25,12 @@ knowndevices:
  # heating control
  35003064: "DuoFern Heizkörperstellantrieb 9433"
 
+# Known and tested devices are listed here.
+# Add your missing device numbers here from the list above. Be aware of a space character at the beginning of a line.
 mapping:
  14234511: "rollershutter"
  35000662: "rollershutter"
+ 36500572: "rollershutter"
+ 16234511: "rollershutter"
  35001164: "switch"
  35003064: "heating"
- # add your missing device numbers here
