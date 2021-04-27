@@ -122,9 +122,9 @@ def try_deviceInitialization():
     mqtt_items_new = {}
     log_message("Request HomePilot active device list: %s" % (hp_host))
     try:
-        response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
+        response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)        
         log_message("Connection established successfully.")                
-        parsed_json = (json.loads(response.text))
+        parsed_json = (json.loads(response.text))        
 
         # Debugging start, can overload by reading configuration from file
         # with open("data/device_info.json", "r") as read_file:
@@ -332,6 +332,7 @@ hp_host = "http://"
 hp_pwd = ""
 hp_devices_url_cmd_part = "devices"
 hp_devices_url_list_part = "v4/devices"
+hp_sensor_url_list_part = "v4/devices?devtype=Sensor"
 hp_send_data_gotopos_tmpl = '{"name": "GOTO_POS_CMD", "value": "0"}'
 hp_send_data_stop_tmpl = '{"name": "STOP_CMD"}'
 hp_send_data_on_tmpl = '{"name": "TURN_ON_CMD"}'
