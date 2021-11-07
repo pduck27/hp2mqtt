@@ -89,8 +89,9 @@ def try_deviceUpdate():
     log_message("Update device states %s" % (hp_host))
     mqtt_items_state = {}
     try:
+        # 1. Read actor devices and send status
         response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
-        log_message("Connection established successfully.")            
+        log_message("Connection for devices established successfully.")            
         parsed_json = (json.loads(response.text))
         for mqtt_item in mqtt_items:
             for hp_device in parsed_json["devices"]:
@@ -100,11 +101,26 @@ def try_deviceUpdate():
                     if mqtt_items[mqtt_item][2].lower() == "heating":
                         mqtt_items_state[mqtt_item]["Position"] = mqtt_items_state[mqtt_item]["Position"] / 10
                         mqtt_items_state[mqtt_item]["acttemperatur"] = mqtt_items_state[mqtt_item]["acttemperatur"] / 10
- #                   
+        
+        #if (not mqtt_items_state is None):           
+        #        log_message("Status found: %s" % (mqtt_items_state))                                                             
+        #        for mqtt_item_state in mqtt_items_state:                     
+        #            client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))          
+
+        # 2. Read meter devices and send status
+        response = requests.get("%s/%s" % (hp_host, hp_meter_url_list_part), cookies=cookies)
+        log_message("Connection for meters established successfully.")            
+        parsed_json = (json.loads(response.text))
+        for mqtt_item in mqtt_items:
+            for hp_device in parsed_json["meters"]:
+                if hp_device["did"] == mqtt_items[mqtt_item][0]:
+                    #log_message(str(hp_device["statusesMap"]))
+                    mqtt_items_state[mqtt_item] = hp_device["readings"]  
+        
         if (not mqtt_items_state is None):           
                 log_message("Status found: %s" % (mqtt_items_state))                                                             
                 for mqtt_item_state in mqtt_items_state:                     
-                    client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))          
+                    client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))                     
             
     except Exception as e:
                 log_message("Error during MQTT status update: %s" % (str(e)))
@@ -117,14 +133,16 @@ def on_publish(client,userdata,result):             #create function for callbac
 
 def try_deviceInitialization():
     # get device list and add device number for later type identification to own items
-    # also read current state    
+    # also write config file if requested
     global mqtt_items 
     mqtt_items_new = {}
     log_message("Request HomePilot active device list: %s" % (hp_host))
     try:
-        response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
-        log_message("Connection established successfully.")                
-        parsed_json = (json.loads(response.text))
+        
+        # 1. Reading devices (actors)
+        response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)        
+        log_message("Connection for reading devices established successfully.")                
+        parsed_json = (json.loads(response.text))        
 
         # Debugging start, can overload by reading configuration from file
         # with open("data/device_info.json", "r") as read_file:
@@ -143,25 +161,66 @@ def try_deviceInitialization():
                         if device_mapping.get(int(normalize_deviceid(hp_device["deviceNumber"]))):
                             property_list.append(device_mapping[int(normalize_deviceid(hp_device["deviceNumber"]))])
                         else:
-                            raise Exception("Device with did %s couldn't configure because of missing device number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name))
+                            raise Exception("Device with did %s couldn't configure because of missing number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name))
                         mqtt_items_new[mqtt_item] = property_list
                         log_message("Device with did %s found. Added with device number %s and mapped type '%s'." % (property_list[0], property_list[1], property_list[2]))
                         break
             else:                
                 log_message("Device with did %s is not configured and will be ignored." % (hp_device["did"]))
-
-        mqtt_items = mqtt_items_new
-        log_message("Final device configuration in use: %s" % (str(mqtt_items)))
-
+      
         # if requested via startup parameter -d write configuration
         if len(sys.argv) > 1:
             if sys.argv[1] == "-f":
                 log_message(json.dumps(parsed_json, indent=4, sort_keys=True))            
-                device_info_file = open(dev_file_name, "w")            
+                device_info_file = open(device_file_name, "w")            
                 device_info_file.write(response.text.encode("utf-8").strip())
                 device_info_file.close            
-                log_message("File %s updated with current device list." % (dev_file_name))
+                log_message("File %s updated with current device info." % (device_file_name))                
+
+
+        # 2. Reading devices (meter)
+        response = requests.get("%s/%s" % (hp_host, hp_meter_url_list_part), cookies=cookies)        
+        log_message("Connection for reading meters established successfully.")                
+        parsed_json = (json.loads(response.text))        
+
+        # Debugging start, can overload by reading configuration from file
+        # with open("data/meter_info.json", "r") as read_file:
+        #   parsed_json = json.load(read_file)            
+        #   log_message("json file load success")                           
+        # Debugging end
+        
+        for hp_device in parsed_json["meters"]:
+            log_message("Search device number for meter with did = %s" % (hp_device["did"]))
+            if hp_device["did"] in mqtt_items.values():
+                for mqtt_item in mqtt_items:                
+                    if mqtt_items[mqtt_item] == hp_device["did"]:
+                        property_list = list()
+                        property_list.append(hp_device["did"])
+                        property_list.append(int(normalize_deviceid(hp_device["deviceNumber"])))                    
+                        if device_mapping.get(int(normalize_deviceid(hp_device["deviceNumber"]))):
+                            property_list.append(device_mapping[int(normalize_deviceid(hp_device["deviceNumber"]))])
+                        else:
+                            raise Exception("Meter with did %s couldn't configure because of missing number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name))
+                        mqtt_items_new[mqtt_item] = property_list
+                        log_message("Meter with did %s found. Added with device number %s and mapped type '%s'." % (property_list[0], property_list[1], property_list[2]))
+                        break
+            else:                
+                log_message("Meter with did %s is not configured and will be ignored." % (hp_device["did"]))
+      
+        # if requested via startup parameter -d write configuration
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "-f":
+                log_message(json.dumps(parsed_json, indent=4, sort_keys=True))            
+                device_info_file = open(meter_file_name, "w")            
+                device_info_file.write(response.text.encode("utf-8").strip())
+                device_info_file.close            
+                log_message("File %s updated with current meter info." % (meter_file_name))
+                log_message("Exit application now.")
                 sys.exit(0)
+
+        # Finalization
+        mqtt_items = mqtt_items_new
+        log_message("Final device configuration in use: %s" % (str(mqtt_items)))
 
     except requests.exceptions.RequestException as e:
         log_message("Could not connect to HomePilot at %s. Please check if IP and Login is valid. %s" % (hp_host, str(e)))
@@ -311,7 +370,8 @@ cfg_file_name = "data/hp2mqtt.yaml"
 mapping_file_name = "data/devicemapping.yaml"
 device_mapping = {}
 log_file_name = "log/hp2mqtt.log"
-dev_file_name = "data/device_info.json"
+device_file_name = "data/device_info.json"
+meter_file_name = "data/meter_info.json"
 client = mqttClient.Client()  
 logfile_next_check_date = datetime.datetime.utcnow() + datetime.timedelta(days=1)
 logfile_countdown_default = 14400
@@ -332,6 +392,7 @@ hp_host = "http://"
 hp_pwd = ""
 hp_devices_url_cmd_part = "devices"
 hp_devices_url_list_part = "v4/devices"
+hp_meter_url_list_part = "v4/devices?devtype=Sensor"
 hp_send_data_gotopos_tmpl = '{"name": "GOTO_POS_CMD", "value": "0"}'
 hp_send_data_stop_tmpl = '{"name": "STOP_CMD"}'
 hp_send_data_on_tmpl = '{"name": "TURN_ON_CMD"}'

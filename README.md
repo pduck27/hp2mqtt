@@ -33,6 +33,9 @@ Another important file is the *devicemapping.yaml* in the data directory. Next t
 
 Please let me know when you could test additional types or update the project. Sounds complicate? Maybe but with this solution you do not need to change the script when a new device is on the market and you get an idea which device types are supported (in the *mapping* section of the project here), which one should work (listed under *knowndevices* but not in *mapping* section and which one are definitly unknown. 
 
+FYI: The environment meter will appear twice. Once as an actor and second as meter with two different did's. You must add both to your *hp2mqtt.yaml*. In the *devicemapping.yaml*  file it is mapped as a rollershutter for the actor.
+
+
 # Usage
 The script listens to your MQTT broker's configured *mqtt_channel* (default: *hp2mqtt*) and waits for messages.
 
@@ -42,6 +45,8 @@ For rollershutter types  it will check if the payload value is an integer betwee
 For switch types the set comand accepts *on*, *1*, *100* or *off*, *0* values.
 
 For heating type the set comand accepts everything because of different number formats and units of measure. But it should be a kind of valid integer or decimal number finally. If not, you will get an error from the HomePilot.
+
+
 
 For more information about how to integrate mqtt binding in openhab please refer to [https://www.openhab.org/addons/bindings/mqtt/](https://www.openhab.org/addons/bindings/mqtt/). 
 A possible configuration along to the sample-configuration is a MQTT Generic Thing with: 
@@ -54,6 +59,8 @@ A possible configuration along to the sample-configuration is a MQTT Generic Thi
  For a rollershutter it looks like this: {"Manuellbetrieb": 0, "Position": 95} where *Position* is the shutter position in percent. You can get it via JSONPATH like this *JSONPATH:$.Position*.
 
  For a heating controls it looks like this: {"Manuellbetrieb": 0, "Position": 180, "acttemperatur": 216} where *Position* is the target temperatur and *acttemperatur* is the current one. Actually I divide the value by 10 before sending it as payload. 
+
+ The environment meter sends this: {"sun_detected":false,"sun_brightness":26000,"sun_direction":162.0,"sun_elevation":54,"wind_speed":0.0,"rain_detected":false,"temperature_primary":14.8}. Temperature does not need to be prepared like for heating.
  
 
 # Docker-Integration
@@ -74,17 +81,18 @@ docker run -d \
 
 # Limitations & issues
 Up to now I could test it with the following hardware components:
- - Rollershutters like [Rollotron 1400 1440 and 1405](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511)
+ - Rollershutters like [Rollotron 14* and 18* series](https://www.rademacher.de/smart-home/produkte/rollotron-standard-duofern-1400-1440-1405?productID=14234511)
  - Rollershutter actor [DuoFern Rohrmotor-Aktor 9471-1](https://www.rademacher.de/smart-home/produkte/rohrmotor-aktor-9471-1?productID=35140662)
+ - Rollershutter control [Troll Comfort 5665](https://www.rademacher.de/shop/rollladen-sonnenschutz/steuerung/troll-comfort-duofern-5665-uw)
  - Switch [DuoFern Zwischenstecker Schalten 9472](https://www.rademacher.de/smart-home/produkte/duofern-zwischenstecker-schalten-9472?productID=35001164)
  - Heating Control [DuoFern Heizkörperstellantrieb 9433 (Version 1)](https://www.rademacher.de/smart-home/produkte/duofern-heizkoerperstellantrieb-9433?productID=35003074)
+ - Environment Meter [DuoFern Umweltsensor](https://www.rademacher.de/shop/rollladen-sonnenschutz/sensoren/duofern-umweltsensor-9475)
  
  But as long as I see it will work with all other devices of the same family in the same way. Please check the mappingfile for the *knowndevices* which should work.
  
  # Latest release notes
- - Simple cut off log file after one day
- - The heating control integration has place for improvement like the handling with units of measure.
- - The code itself is a little bit blown now. It needs some re-design.
- - Periodical status updates via MQTT are integrated.
- - Heating control as a new type is integrated.
+ - Integrated the Duofern Environment meter.
+ - Fixed issue with Suffix in deviceid's.
+ - Simple cut off log file after one day.
+ - The heating control integration has place for improvement like the handling with units of measure. 
  

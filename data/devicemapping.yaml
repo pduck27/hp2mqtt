@@ -10,7 +10,7 @@ knowndevices:
  35000462: "DuoFern-Universal-Dimmaktor"
  35140462: "DuoFern-UniversalDimmer-9476"
  36500572: "Duofern-Troll-Comfort-5665"
- 32000064: "DuoFern-Umweltsensor"
+ 32000064: "DuoFern-Umweltsensor" # is a combination of meter and actor, only actor matters here
  16234511: "DuoFern-RolloTron-Comfort-1800/1805/1840"
  14236011: "DuoFern-RolloTron-Pro-Comfort-9800"
  23602075: "DuoFern-S-Line-Motor-Typ-SLDM-10/16-PZ"
@@ -34,3 +34,4 @@ mapping:
  16234511: "rollershutter"
  35001164: "switch"
  35003064: "heating"
+ 32000064: "rollershutter"

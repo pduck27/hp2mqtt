@@ -9,5 +9,7 @@ system:
   mqtt_update_sec: 30
 
 devices:
-  Rollershutter1: "1010000"
-  Actor2: "1010002"
+  RollershutterKitchen: "1010000"
+  ActorEntranceLight: "1010002"
+  ActorEnvironmentDevice: "1010010"
+  MeterEnvironmentDevice: "1010011"
