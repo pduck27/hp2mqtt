@@ -48,12 +48,12 @@ def try_authentication():
             # get password_salt
             return_data = response.json()            
             pwd = hashlib.sha256()
-            pwd.update(hp_pwd)
+            pwd.update(hp_pwd.encode('utf-8'))
             
             # build pass-string with salt and individual password
             pwd_salted = hashlib.sha256()
-            pwd_salted.update(return_data["password_salt"])
-            pwd_salted.update(pwd.hexdigest())
+            pwd_salted.update(return_data["password_salt"].encode('utf-8'))
+            pwd_salted.update(pwd.hexdigest().encode('utf-8'))
 
             send_data = json.loads(hp_send_data_login_tmpl)     
             send_data["password"] = pwd_salted.hexdigest()
