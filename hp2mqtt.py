@@ -1,7 +1,5 @@
-#TODO Umbau Logging https://docs.python.org/3/howto/logging.html
-#TODO Sensoren seltener abrufen
-
 #import
+from encodings import utf_8
 import paho.mqtt.client as mqttClient
 import time
 import requests
@@ -24,16 +22,14 @@ def is_integer(n):
     else:
         return float(n).is_integer()
 
-def normalize_deviceid(deviceid):
+
+def normalize_deviceID(deviceid):
     # Normalizing device_id, because sometimes they have an additional _<Character> at the end
     deviceid_str = str(deviceid)
     if deviceid_str.find("_") != -1:
         deviceid_str = deviceid_str[0:deviceid_str.index("_")]
 
     return deviceid_str
-
-def close_logfile():
-    logging.shutdown    
 
 
 def log_message(message, level):
@@ -44,7 +40,11 @@ def log_message(message, level):
     print (str(message))
 
 
-def try_authentication():    
+def close_logfile():
+    logging.shutdown  
+
+
+def try_HomePilotAuthentication():    
     response = None
     try:      
         return_data = {}
@@ -53,12 +53,12 @@ def try_authentication():
             # get password_salt
             return_data = response.json()            
             pwd = hashlib.sha256()
-            pwd.update(hp_pwd.encode('utf-8'))
+            pwd.update(hp_pwd.encode())
             
             # build pass-string with salt and individual password
             pwd_salted = hashlib.sha256()
-            pwd_salted.update(return_data["password_salt"].encode('utf-8'))
-            pwd_salted.update(pwd.hexdigest().encode('utf-8'))
+            pwd_salted.update(return_data["password_salt"].encode())
+            pwd_salted.update(pwd.hexdigest().encode())
 
             send_data = json.loads(hp_send_data_login_tmpl)     
             send_data["password"] = pwd_salted.hexdigest()
@@ -90,13 +90,14 @@ def try_authentication():
 
         raise SystemExit(e)
 
-def try_deviceUpdate():
-    log_message("Update device states %s" % (hp_host), logging.INFO)
+
+def try_requestActorDeviceUpdate():
+    log_message("Update actor device states %s" % (hp_host), logging.INFO)
     mqtt_items_state = {}
     try:
-        # 1. Read actor devices and send status
+        # Read actor devices and send status
         response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)
-        log_message("Connection for devices established successfully.", logging.DEBUG)            
+        log_message("Connection for actor devices established successfully.", logging.DEBUG)            
         parsed_json = (json.loads(response.text))
         for mqtt_item in mqtt_items:
             for hp_device in parsed_json["devices"]:
@@ -106,15 +107,22 @@ def try_deviceUpdate():
                     if mqtt_items[mqtt_item][2].lower() == "heating":
                         mqtt_items_state[mqtt_item]["Position"] = mqtt_items_state[mqtt_item]["Position"] / 10
                         mqtt_items_state[mqtt_item]["acttemperatur"] = mqtt_items_state[mqtt_item]["acttemperatur"] / 10
-        
-        # Debugging start - just for debugging purpose here
-        #if (not mqtt_items_state is None):           
-        #        log_message("Status found: %s" % (mqtt_items_state), logging.DEBUG)                                                             
-        #        for mqtt_item_state in mqtt_items_state:                     
-        #            client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))          
-        # Debugging end
+               
+        if (not mqtt_items_state is None):           
+            log_message("Actor status found: %s" % (mqtt_items_state), logging.DEBUG)                                                             
+            for mqtt_item_state in mqtt_items_state:                     
+                client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))                     
+            
+    except Exception as e:
+        log_message("Error during MQTT actor status update: %s" % (str(e)), logging.ERROR)
+        raise SystemExit(e)
 
-        # 2. Read meter devices and send status
+
+def try_requestMeterDeviceUpdate():
+    log_message("Update meter states %s" % (hp_host), logging.INFO)
+    mqtt_items_state = {}
+    try:        
+        # Read meter devices and send status
         response = requests.get("%s/%s" % (hp_host, hp_meter_url_list_part), cookies=cookies)
         log_message("Connection for meters established successfully.", logging.DEBUG)            
         parsed_json = (json.loads(response.text))
@@ -125,18 +133,14 @@ def try_deviceUpdate():
                     mqtt_items_state[mqtt_item] = hp_device["readings"]  
         
         if (not mqtt_items_state is None):           
-                log_message("Status found: %s" % (mqtt_items_state), logging.DEBUG)                                                             
-                for mqtt_item_state in mqtt_items_state:                     
-                    client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))                     
+            log_message("Meter status found: %s" % (mqtt_items_state), logging.DEBUG)                                                             
+            for mqtt_item_state in mqtt_items_state:                     
+                client.publish("%s/%s/status" % (mqtt_channel, mqtt_item_state), json.dumps(mqtt_items_state[mqtt_item_state]))                     
             
     except Exception as e:
-                log_message("Error during MQTT status update: %s" % (str(e)), logging.ERROR)
-                raise SystemExit(e)
+        log_message("Error during MQTT meter status update: %s" % (str(e)), logging.ERROR)
+        raise SystemExit(e)
 
-
-def on_publish(client,userdata,result):             #create function for callback
-    log_message("State published successfully: %s " % (result), logging.DEBUG)
-    
 
 def try_deviceInitialization():
     # get device list and add device number for later type identification to own items
@@ -146,12 +150,12 @@ def try_deviceInitialization():
     log_message("Request HomePilot active device list: %s" % (hp_host), logging.INFO)
     try:
         
-        # 1. Reading devices (actors)
+        # 1. Initially reading of actors
         response = requests.get("%s/%s" % (hp_host, hp_devices_url_list_part), cookies=cookies)        
-        log_message("Connection for reading devices established successfully.", logging.INFO)                
+        log_message("Connection for reading actors established successfully.", logging.INFO)                
         parsed_json = (json.loads(response.text))        
 
-        # Debugging start, can overload by reading configuration from file
+        # Debugging start: can be overload by reading configuration from file an not from HomePilot for debugging purpose
         # with open("data/device_info.json", "r") as read_file:
         #   parsed_json = json.load(read_file)            
         #   log_message("json file load success")                           
@@ -164,9 +168,9 @@ def try_deviceInitialization():
                     if mqtt_items[mqtt_item] == hp_device["did"]:
                         property_list = list()
                         property_list.append(hp_device["did"])
-                        property_list.append(int(normalize_deviceid(hp_device["deviceNumber"])))                    
-                        if device_mapping.get(int(normalize_deviceid(hp_device["deviceNumber"]))):
-                            property_list.append(device_mapping[int(normalize_deviceid(hp_device["deviceNumber"]))])
+                        property_list.append(int(normalize_deviceID(hp_device["deviceNumber"])))                    
+                        if device_mapping.get(int(normalize_deviceID(hp_device["deviceNumber"]))):
+                            property_list.append(device_mapping[int(normalize_deviceID(hp_device["deviceNumber"]))])
                         else:
                             raise Exception("Device with did %s couldn't configure because of missing number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name), logging.ERROR)
                         mqtt_items_new[mqtt_item] = property_list
@@ -175,22 +179,22 @@ def try_deviceInitialization():
             else:                
                 log_message("Device with did %s is not configured and will be ignored." % (hp_device["did"]), logging.WARNING)
       
-        # if requested via startup parameter -F write configuration 
+        # If requested via startup parameter -F write configuration for actors
         for argument in sys.argv: 
             match argument.upper():
                 case "-F":
                     log_message(json.dumps(parsed_json, indent=4, sort_keys=True), logging.INFO)            
                     device_info_file = open(device_file_name, "w")            
-                    device_info_file.write(response.text.encode("utf-8").strip())
+                    device_info_file.write(str(response.text.encode().strip()))
                     device_info_file.close            
                     log_message("File %s updated with current device info." % (device_file_name), logging.INFO)                
                
-        # 2. Reading devices (meter)
+        # 2. Initially reading of meters
         response = requests.get("%s/%s" % (hp_host, hp_meter_url_list_part), cookies=cookies)        
         log_message("Connection for reading meters established successfully.", logging.INFO)                
         parsed_json = (json.loads(response.text))        
 
-        # Debugging start, can overload by reading configuration from file
+        # Debugging start: can be overload by reading configuration from file an not from HomePilot for debugging purpose
         # with open("data/meter_info.json", "r") as read_file:
         #   parsed_json = json.load(read_file)            
         #   log_message("json file load success", logging.DEBUG)                           
@@ -203,9 +207,9 @@ def try_deviceInitialization():
                     if mqtt_items[mqtt_item] == hp_device["did"]:
                         property_list = list()
                         property_list.append(hp_device["did"])
-                        property_list.append(int(normalize_deviceid(hp_device["deviceNumber"])))                    
-                        if device_mapping.get(int(normalize_deviceid(hp_device["deviceNumber"]))):
-                            property_list.append(device_mapping[int(normalize_deviceid(hp_device["deviceNumber"]))])
+                        property_list.append(int(normalize_deviceID(hp_device["deviceNumber"])))                    
+                        if device_mapping.get(int(normalize_deviceID(hp_device["deviceNumber"]))):
+                            property_list.append(device_mapping[int(normalize_deviceID(hp_device["deviceNumber"]))])
                         else:
                             raise Exception("Meter with did %s couldn't configure because of missing number mapping for device type %s in file '%s'" % (property_list[0], property_list[1], mapping_file_name), logging.ERROR)
                         mqtt_items_new[mqtt_item] = property_list
@@ -214,13 +218,13 @@ def try_deviceInitialization():
             else:                
                 log_message("Meter with did %s is not configured and will be ignored." % (hp_device["did"]), logging.WARNING)
       
-        # if requested via startup parameter -F write configuration 
+        # If requested via startup parameter -F write configuration 
         for argument in sys.argv: 
             match argument.upper():
                 case "-F":
                     log_message(json.dumps(parsed_json, indent=4, sort_keys=True), logging.INFO)            
                     device_info_file = open(meter_file_name, "w")            
-                    device_info_file.write(response.text.encode("utf-8").strip())
+                    device_info_file.write(str(response.text.encode().strip()))
                     device_info_file.close            
                     log_message("File %s updated with current meter info." % (meter_file_name), logging.INFO)
                     log_message("Exit application now.", logging.INFO)
@@ -228,7 +232,7 @@ def try_deviceInitialization():
 
         # Finalization
         mqtt_items = mqtt_items_new
-        log_message("Final device configuration in use: %s" % (str(mqtt_items)), logging.INFO)
+        log_message("Final configuration in use: %s" % (str(mqtt_items)), logging.INFO)
 
     except requests.exceptions.RequestException as e:
         log_message("Could not connect to HomePilot at %s. Please check if IP and Login is valid. %s" % (hp_host, str(e)), logging.ERROR)
@@ -238,7 +242,8 @@ def try_deviceInitialization():
         log_message("Error during device configuration reading: %s" % (str(e)), logging.ERROR)
         raise SystemExit(e)
 
-def on_connect(client, userdata, flags, rc):
+
+def on_connectMQTTBroker(client, userdata, flags, rc):
     if rc == 0:
         log_message("Connected to mqtt broker.", logging.INFO)
         global mqtt_connected                
@@ -247,8 +252,8 @@ def on_connect(client, userdata, flags, rc):
         log_message("Connection to mqtt broker failed.", logging.ERROR)
 
 
-def on_set_message(client, userdata, message):      
-    log_message("Received message: %s %s" % (message.topic, message.payload), logging.INFO)
+def on_receiveMQTTMessage(client, userdata, message):      
+    log_message("Received message: %s %s" % (message.topic, message.payload.decode()), logging.INFO)
 
     #validate message with channel, topic, action and item id    
     topic_arr = message.topic.split("/")
@@ -262,7 +267,7 @@ def on_set_message(client, userdata, message):
         
         curr_device_name = topic_arr[1].lower()
         curr_topic_cmd = topic_arr[2].lower()
-        curr_topic_payload = message.payload.lower()
+        curr_topic_payload = message.payload.lower().decode()
         if curr_topic_cmd == "status":
             log_message("Ignore processing of state message.", logging.DEBUG)
             return
@@ -307,8 +312,8 @@ def on_set_message(client, userdata, message):
 
         # prepare comand
         try:
-            global mqtt_update_countdown
-            new_update_countdown = mqtt_update_countdown
+            global mqtt_actor_countdown
+            new_actor_update_countdown = mqtt_actor_countdown
             send_comand = "%s/%s/%s" % (hp_host, hp_devices_url_cmd_part, curr_device_did)  
             send_data = ""  
 
@@ -318,14 +323,14 @@ def on_set_message(client, userdata, message):
                     if int(curr_topic_payload) >= 0 and int(curr_topic_payload) <= 100 :    
                         send_data = json.loads(hp_send_data_gotopos_tmpl)     
                         send_data["value"] = curr_topic_payload    
-                        new_update_countdown = 15    
+                        new_actor_update_countdown = 15    
                     else:
                         raise Exception("Can not process payload: %s" % (curr_topic_payload))
 
                 
                 elif str(curr_topic_payload) == "stop":                
                     send_data = json.loads(hp_send_data_stop_tmpl)  
-                    new_update_countdown = 3
+                    new_actor_update_countdown = 3
                 else:
                     raise Exception("Can not process payload: %s" % (curr_topic_payload))
             
@@ -341,13 +346,13 @@ def on_set_message(client, userdata, message):
                 else:
                     raise Exception("Can not process payload: %s" % (curr_topic_payload))
 
-                new_update_countdown = 5
+                new_actor_update_countdown = 5
 
             # heating (no further check for integer values because of different formats)
             elif curr_device_type == "heating":                 
                 send_data = json.loads(hp_send_data_temperature_tmpl)     
                 send_data["value"] = curr_topic_payload  
-                new_update_countdown = 5
+                new_actor_update_countdown = 5
                
 
             # not implemented 
@@ -360,15 +365,18 @@ def on_set_message(client, userdata, message):
 
         # send comand        
         try:   
-            log_message("Try to send : %s with %s." % (send_comand, json.dumps(send_data)), logging.INFO)            
+            log_message("Try to send : %s with %s." % (send_comand, json.dumps(str(send_data))), logging.INFO)            
             response = requests.put(send_comand, json.dumps(send_data), headers=headers, cookies=cookies)             
             parsed_json = json.loads(response.text)            
             log_message("Result: %s" % (parsed_json["error_description"]), logging.INFO)
-            mqtt_update_countdown = new_update_countdown
+            mqtt_actor_countdown = new_actor_update_countdown
 
         except Exception as e :
             log_message("Request to HomePilot was unsuccessful: %s" % (str(e)), logging.ERROR)
             return
+
+def on_publishMQTTMessage(client,userdata,result):             #create function for callback
+    log_message("State published successfully: %s " % (result), logging.DEBUG)
 
 # main
 #variables
@@ -391,8 +399,10 @@ mqtt_password = ""
 mqtt_channel = "hp2mqtt"
 mqtt_items = {}
 mqtt_last_cmd = {}
-mqtt_update_sec = 300
-mqtt_update_countdown = 300
+mqtt_actor_update_sec = 300
+mqtt_actor_countdown = 300
+mqtt_meter_update_sec = 300
+mqtt_meter_countdown = 300
 
 hp_host = "http://"
 hp_pwd = ""
@@ -413,11 +423,11 @@ if ("-D" in sys.argv) or ("-d" in sys.argv):
 
 logging.basicConfig(filename=log_file_name, filemode='w', encoding='utf-8', format='%(asctime)s - %(levelname)s - %(message)s', level=new_log_level)  
 logger = logging.getLogger('my_logger')
-handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=5000, backupCount=10, delay=True) #5000000
+handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=5000000, backupCount=10, delay=True) #TODO 5000000
 logger.addHandler(handler)
 
-for _ in range(10000):
-    log_message("Hello, world!", logging.INFO)
+#for _ in range(10000): # TODO test logging
+#    log_message("Hello, world!", logging.INFO) # TODO test logging
 
 log_message("Log level set to: %s." %(logging._levelToName[new_log_level]), logging.INFO)
 
@@ -456,8 +466,11 @@ try:
         if config_dict_sys.get("hp_host"): 
             hp_host = hp_host + config_dict_sys["hp_host"]
 
-        if config_dict_sys.get("mqtt_update_sec"):
-            mqtt_update_sec = config_dict_sys["mqtt_update_sec"]
+        if config_dict_sys.get("mqtt_actor_update_sec"):
+            mqtt_actor_update_sec = config_dict_sys["mqtt_actor_update_sec"]
+
+        if config_dict_sys.get("mqtt_meter_update_sec"):
+            mqtt_meter_update_sec = config_dict_sys["mqtt_meter_update_sec"]
 
         # devices        
         for device in config_dict["devices"]:
@@ -479,16 +492,16 @@ except Exception as e:
     raise SystemExit(e)
 
 # try authorization request
-try_authentication()
+try_HomePilotAuthentication()
 
 # try device initial update
 try_deviceInitialization()
 
 # initiate mqtt connection
 client.username_pw_set(mqtt_user, mqtt_password)    
-client.on_connect= on_connect                      
-client.on_message= on_set_message   
-client.on_publish = on_publish                        
+client.on_connect= on_connectMQTTBroker                      
+client.on_message= on_receiveMQTTMessage   
+client.on_publish = on_publishMQTTMessage                        
 
 client.connect(mqtt_broker_address, mqtt_port)  
 client.loop_start() 
@@ -497,22 +510,40 @@ while mqtt_connected != True:
     time.sleep(0.1)
 
 client.subscribe(mqtt_channel + "/#" )
-log_message("Listen to "+ mqtt_channel + "/#", logging.INFO)
+log_message("Listen to: %s /#" % (mqtt_channel), logging.INFO)
 
-# try first device state update
-try_deviceUpdate()
+# try first state updates
+try_requestActorDeviceUpdate()
+try_requestMeterDeviceUpdate()
 
-mqtt_update_countdown = mqtt_update_sec
+# main loop
+mqtt_actor_countdown = mqtt_actor_update_sec
+mqtt_meter_countdown = mqtt_meter_update_sec
 try:
     while True:
-        time.sleep(1)
+        time.sleep(1)        
         
-        # main routine
-        mqtt_update_countdown -= 1
-        if mqtt_update_countdown <= 0:
-            try_deviceUpdate()
-            mqtt_update_countdown = mqtt_update_sec      
-        
+        # read actors
+        mqtt_actor_countdown -= 1        
+        if mqtt_actor_countdown == 0:
+            try:
+                mqtt_actor_countdown -= 1        
+                try_requestActorDeviceUpdate()
+            finally:
+                mqtt_actor_countdown = mqtt_actor_update_sec  
+
+        # read meters
+        mqtt_meter_countdown -= 1
+        if mqtt_meter_countdown == 0:
+            try:
+                mqtt_meter_countdown -= 1
+                try_requestMeterDeviceUpdate()
+            finally:
+                mqtt_meter_countdown = mqtt_meter_update_sec  
+
+        log_message("Next actor update in: %s" % (mqtt_actor_countdown), logging.DEBUG)
+        log_message("Next meter update in: %s" % (mqtt_meter_countdown), logging.DEBUG)
+
 
 except KeyboardInterrupt:
     log_message("Exiting", logging.INFO)

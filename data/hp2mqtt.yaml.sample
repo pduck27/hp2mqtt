@@ -6,7 +6,8 @@ system:
   mqtt_channel: "hp2mqtt"
   hp_host: "199.100.10.1"
   hp_pwd: ""
-  mqtt_update_sec: 30
+  mqtt_actor_update_sec: 30
+  mqtt_meter_update_sec: 60
 
 devices:
   RollershutterKitchen: "1010000"
